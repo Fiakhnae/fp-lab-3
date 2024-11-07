@@ -1,5 +1,5 @@
 (defun sort-imp (lst)
-  (let (R k tmp)
+  (let (R k)
     (setf R (- (length lst) 1))
     (loop while (> R 0) do
       (setf k 0)
@@ -12,31 +12,35 @@
       (setf R k))  
     lst))
 
-(defun bubble-step-functional (lst last-swap-position current-position)
-  (cond
-   ((or (null (cdr lst)) (not last-swap-position)) (values lst last-swap-position)) 
-   ((> (car lst) (cadr lst))  
-    (multiple-value-bind (new-tail new-last-swap-position)
-        (bubble-step-functional (cons (cadr lst) (cdr (cdr lst))) current-position (1+ current-position))
-      (values (cons (car lst) new-tail) new-last-swap-position)))
-   (t  
-    (multiple-value-bind (new-tail new-last-swap-position)
-        (bubble-step-functional (cdr lst) last-swap-position (1+ current-position))
-      (values (cons (car lst) new-tail) new-last-swap-position)))))
+(defun bubble-step (lst last-swap)
+  (cond ((or (null lst) (null (cdr lst))) (values lst last-swap))
+        (t (let ((a (car lst))
+                 (b (cadr lst)))
+             (if (> a b)
+                 (let* ((swapped (cons b (cons a (cddr lst)))))
+                   (multiple-value-bind (sorted-lst new-last-swap)
+                       (bubble-step (cdr swapped) t)
+                     (values (cons (car swapped) sorted-lst)
+                             (or new-last-swap t))))
+                 (multiple-value-bind (sorted-lst new-last-swap)
+                     (bubble-step (cdr lst) nil)
+                   (values (cons a sorted-lst)
+                           (or new-last-swap last-swap))))))))
 
-(defun sort-func (lst)
+(defun recursive-bubble-sort (lst)
   (labels ((recursive-sort (lst)
-             (multiple-value-bind (new-lst last-swap-position) 
-                 (bubble-step-functional lst nil 1)  
-               (if (not last-swap-position)
-                   new-lst
-                   (recursive-sort new-lst)))))
+             (multiple-value-bind (new-lst last-swap)
+                 (bubble-step lst nil)
+               (if last-swap
+                   (recursive-sort new-lst)
+                   new-lst))))
     (recursive-sort lst)))
+
 
 (defun check-sort-func (name input expected)
   "Execute `sort-func` on `input`, compare result with `expected` and print comparison status."
   (format t "~:[FAILED~;passed~]... ~a~%"
-          (equal (sort-func (copy-list input)) expected)
+          (equal (recursive-bubble-sort (copy-list input)) expected)
           name))
 
 (defun test-sort-func ()
