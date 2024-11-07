@@ -38,34 +38,29 @@
 ## Лістинг функції з використанням конструктивного підходу
 
 ```lisp
-(defun generate-indices (n &optional (index 0))
-  (if (>= index n)
-      '()
-      (cons index (generate-indices n (1+ index)))))
+(defun bubble-step (lst last-swap)
+  (cond ((or (null lst) (null (cdr lst))) (values lst last-swap))
+        (t (let ((a (car lst))
+                 (b (cadr lst)))
+             (if (> a b)
+                 (let* ((swapped (cons b (cons a (cddr lst)))))
+                   (multiple-value-bind (sorted-lst new-last-swap)
+                       (bubble-step (cdr swapped) t)
+                     (values (cons (car swapped) sorted-lst)
+                             (or new-last-swap t))))
+                 (multiple-value-bind (sorted-lst new-last-swap)
+                     (bubble-step (cdr lst) nil)
+                   (values (cons a sorted-lst)
+                           (or new-last-swap last-swap))))))))
 
-(defun swap (lst i j)
-  (mapcar (lambda (index)
-            (cond ((= index i) (nth j lst))
-                  ((= index j) (nth i lst))
-                  (t (nth index lst))))
-          (generate-indices (length lst))))
-
-(defun bubble-step (lst i R last-swap reverse)
-  (if (>= i R)
-      (values lst last-swap)
-      (let ((a (nth i lst))
-            (b (nth (1+ i) lst)))
-        (if (if reverse (< a b) (> a b))
-            (bubble-step (swap lst i (1+ i)) (1+ i) R i reverse)
-            (bubble-step lst (1+ i) R last-swap reverse)))))
-
-(defun sort-func (lst &optional (reverse nil))
-  (labels ((recursive-sort (lst R)
-             (multiple-value-bind (new-lst last-swap) (bubble-step lst 0 R nil reverse)
-               (if (not last-swap)
-                   new-lst
-                   (recursive-sort new-lst last-swap)))))
-    (recursive-sort lst (1- (length lst)))))
+(defun recursive-bubble-sort (lst)
+  (labels ((recursive-sort (lst)
+             (multiple-value-bind (new-lst last-swap)
+                 (bubble-step lst nil)
+               (if last-swap
+                   (recursive-sort new-lst)
+                   new-lst))))
+    (recursive-sort lst)))
 ```
 
 ### Тестові набори
