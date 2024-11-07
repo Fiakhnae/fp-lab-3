@@ -12,34 +12,26 @@
       (setf R k))  
     lst))
 
-(defun generate-indices (n &optional (index 0))
-  (if (>= index n)
-      '()
-      (cons index (generate-indices n (1+ index)))))
+(defun bubble-step-functional (lst last-swap-position current-position)
+  (cond
+   ((or (null (cdr lst)) (not last-swap-position)) (values lst last-swap-position)) 
+   ((> (car lst) (cadr lst))  
+    (multiple-value-bind (new-tail new-last-swap-position)
+        (bubble-step-functional (cons (cadr lst) (cdr (cdr lst))) current-position (1+ current-position))
+      (values (cons (car lst) new-tail) new-last-swap-position)))
+   (t  
+    (multiple-value-bind (new-tail new-last-swap-position)
+        (bubble-step-functional (cdr lst) last-swap-position (1+ current-position))
+      (values (cons (car lst) new-tail) new-last-swap-position)))))
 
-(defun swap (lst i j)
-  (mapcar (lambda (index)
-            (cond ((= index i) (nth j lst))
-                  ((= index j) (nth i lst))
-                  (t (nth index lst))))
-          (generate-indices (length lst))))
-
-(defun bubble-step (lst i R last-swap reverse)
-  (if (>= i R)
-      (values lst last-swap)
-      (let ((a (nth i lst))
-            (b (nth (1+ i) lst)))
-        (if (if reverse (< a b) (> a b))
-            (bubble-step (swap lst i (1+ i)) (1+ i) R i reverse)
-            (bubble-step lst (1+ i) R last-swap reverse)))))
-
-(defun sort-func (lst &optional (reverse nil))
-  (labels ((recursive-sort (lst R)
-             (multiple-value-bind (new-lst last-swap) (bubble-step lst 0 R nil reverse)
-               (if (not last-swap)
+(defun sort-func (lst)
+  (labels ((recursive-sort (lst)
+             (multiple-value-bind (new-lst last-swap-position) 
+                 (bubble-step-functional lst nil 1)  
+               (if (not last-swap-position)
                    new-lst
-                   (recursive-sort new-lst last-swap)))))
-    (recursive-sort lst (1- (length lst)))))
+                   (recursive-sort new-lst)))))
+    (recursive-sort lst)))
 
 (defun check-sort-func (name input expected)
   "Execute `sort-func` on `input`, compare result with `expected` and print comparison status."
